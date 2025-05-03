@@ -1,49 +1,124 @@
-import { Route, Routes } from "react-router";
-import { Navbar } from "./Components/NavBar/Navbar";
-import { CertificatePage } from "./Pages/Certificate/CertificatePage";
-import { Home } from "./Pages/Home/Home";
-import { ManageeCertificate } from "./Pages/ManageCertificatePage/ManageeCertificate";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { useDropzone } from "react-dropzone";
+import { toast, Toaster } from "sonner";
+import SensorRankingTable from "./SensorRankingTable";
+import SpinnerOverlay from "./SpinnerOverlay";
 
 function App() {
+  const [tableData, setTableData] = useState([]);
+  const [file, setFile] = useState(null);
+  const [fileName, setFileName] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const onDrop = (acceptedFiles) => {
+    const selectedFile = acceptedFiles[0];
+    if (selectedFile && selectedFile.type === "text/csv") {
+      setFile(selectedFile);
+      setFileName(selectedFile.name);
+      setMessage("");
+    } else {
+      setMessage("Only CSV files are allowed.");
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { "text/csv": [".csv"] },
+    multiple: false,
+  });
+
+  const handleUpload = async () => {
+    if (!file) {
+      setMessage("Please select a CSV file before submitting.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    console.log(formData);
+
+    try {
+      setUploading(true);
+      setMessage("");
+
+      const res = await axios.post(
+        "http://localhost:5000/api/v1/ranking/uploadCsv",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      console.log(res);
+
+      setMessage("File uploaded successfully.");
+      console.log(res.data);
+      if (res?.data?.statusCode === 200) {
+        toast.success("Upload done");
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetch(`http://localhost:5000/api/v1/ranking`)
+      .then((res) => res.json())
+      .then((data) => setTableData(data?.data));
+  }, [tableData]);
+
+  if (uploading) {
+    return <SpinnerOverlay />;
+  }
+
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <>
-            <Navbar />
-            <Home />
-          </>
-        }
-      />
-      <Route
-        path="/home"
-        element={
-          <>
-            <Navbar />
-            <Home />
-          </>
-        }
-      />
-      <Route
-        path="/manageCertificate"
-        element={
-          <>
-            <Navbar />
-            <ManageeCertificate />
-          </>
-        }
-      />
-      <Route
-        path="/certificate/:id"
-        element={
-          <>
-            <Navbar />
-            <CertificatePage />
-          </>
-        }
-      />
-    </Routes>
+    <>
+      <Toaster />
+      {/* Form for upload CV */}
+      <div>
+        <div className="max-w-md mx-auto mt-10 p-6 bg-[#1e1e2f] text-white rounded-lg shadow-lg border border-gray-700">
+          <h2 className="text-2xl font-semibold mb-4 text-white">
+            Upload CSV File
+          </h2>
+
+          <div
+            {...getRootProps()}
+            className={`p-6 border-4 border-dashed rounded-lg text-center cursor-pointer transition duration-300 ${
+              isDragActive
+                ? "border-blue-400 bg-[#2a2a40]"
+                : "border-gray-600 bg-[#2a2a40] hover:border-blue-500"
+            }`}
+          >
+            <input {...getInputProps()} />
+            <p className="text-gray-300">
+              {fileName ||
+                "📁 Drag and drop a CSV file here, or click to select"}
+            </p>
+          </div>
+
+          {message && <p className="mt-3 text-sm text-yellow-400">{message}</p>}
+
+          <button
+            onClick={handleUpload}
+            disabled={!file || uploading}
+            className={`mt-5 w-full py-2 px-4 rounded-md font-medium transition ${
+              uploading || !file
+                ? "bg-gray-600 cursor-not-allowed text-gray-300"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
+          >
+            {uploading ? "Uploading..." : "Submit CSV"}
+          </button>
+        </div>
+        <SensorRankingTable data={tableData} />
+      </div>
+    </>
   );
 }
 

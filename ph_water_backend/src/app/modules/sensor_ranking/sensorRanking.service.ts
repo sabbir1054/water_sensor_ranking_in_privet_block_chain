@@ -91,7 +91,6 @@ const csvUpload = async (link: string) => {
 
   console.log("🚀 All valid CSV data uploaded to blockchain.");
 };
-
 const getAllSensorRanks = async (pageSize = "50", bookmark = "") => {
   const contract = await getContract();
   if (!contract) {
@@ -100,15 +99,14 @@ const getAllSensorRanks = async (pageSize = "50", bookmark = "") => {
 
   try {
     const resultBuffer = await contract.evaluateTransaction("getAll");
-
     const jsonString = Buffer.from(resultBuffer).toString("utf8");
-
-    // Optional debug
-    console.log("Response from chaincode:", jsonString);
 
     let sensorRankings;
     try {
       sensorRankings = JSON.parse(jsonString);
+
+      // 🔽 Sort descending by totalScore
+      sensorRankings.sort((a: any, b: any) => b.totalScore - a.totalScore);
     } catch (err) {
       throw new ApiError(
         httpStatus.INTERNAL_SERVER_ERROR,
@@ -117,7 +115,7 @@ const getAllSensorRanks = async (pageSize = "50", bookmark = "") => {
     }
 
     return sensorRankings;
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error retrieving sensor rankings:", err);
     throw new ApiError(
       httpStatus.INTERNAL_SERVER_ERROR,
@@ -125,6 +123,7 @@ const getAllSensorRanks = async (pageSize = "50", bookmark = "") => {
     );
   }
 };
+
 export const SensorRankingService = {
   csvUpload,
   getAllSensorRanks,

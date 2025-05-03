@@ -9,6 +9,14 @@
 > ### Install node js on your system
 >
 > Link: https://nodejs.org/en
+>
+> ### Install Jq on your system
+>
+> Link: https://jqlang.org/download/
+>
+> ### Install Docker on your system
+>
+> Link: https://www.docker.com/products/docker-desktop/
 
 > [!TIP]
 > Run different project in different terminal tab.

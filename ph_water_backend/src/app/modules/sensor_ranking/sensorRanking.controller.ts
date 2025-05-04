@@ -12,6 +12,16 @@ const csvUpload = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+const processCSVBatch = catchAsync(async (req: Request, res: Response) => {
+  const result = await SensorRankingService.processCSVBatch(req.body.file);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Upload done ",
+    data: result,
+  });
+});
 const getAllSensorRanks = catchAsync(async (req: Request, res: Response) => {
   const result = await SensorRankingService.getAllSensorRanks();
   sendResponse(res, {
@@ -23,5 +33,6 @@ const getAllSensorRanks = catchAsync(async (req: Request, res: Response) => {
 });
 export const SensorRankingController = {
   csvUpload,
+  processCSVBatch,
   getAllSensorRanks,
 };

@@ -6,7 +6,7 @@ import path from "path";
 import { getContract } from "../../../connection";
 import ApiError from "../../../errors/ApiError";
 
-const BATCH_SIZE = 1000;
+const BATCH_SIZE = 20000;
 
 const csvUpload = async (link: string) => {
   const contract = await getContract();
@@ -124,7 +124,61 @@ const getAllSensorRanks = async (pageSize = "50", bookmark = "") => {
   }
 };
 
+//batch upload service
+const processCSVBatch = async (link: string) => {
+  const contract = await getContract();
+  if (!contract) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Fabric connection failed.");
+  }
+
+  const filePath = path.join(process.cwd(), "uploads", path.basename(link));
+
+  let fileContent: string;
+  try {
+    fileContent = fs.readFileSync(filePath, "utf8");
+  } catch (err) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "File not found or unreadable.");
+  }
+
+  const parsed = Papa.parse(fileContent, {
+    header: true,
+    skipEmptyLines: true,
+  });
+
+  if (parsed.errors.length > 0) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "CSV parsing error.");
+  }
+
+  const data = parsed.data as Array<{
+    SensorID: string;
+    Temp: string;
+    Salinity: string;
+    PH: string;
+    NH4: string;
+    DO: string;
+    CA: string;
+  }>;
+
+  for (let i = 0; i < data.length; i += BATCH_SIZE) {
+    const batch = data.slice(i, i + BATCH_SIZE);
+    try {
+      const response = await contract.submitTransaction(
+        "batchAddSensorReadings",
+        JSON.stringify(batch)
+      );
+      const jsonString = Buffer.from(response).toString("utf8");
+      // return jsonString;
+      console.log(`✅ :`, jsonString);
+    } catch (err) {
+      console.error(`❌ Error submitting batch ${i / BATCH_SIZE + 1}:`, err);
+    }
+  }
+
+  return `✅ All ${data.length} records processed in ${Math.ceil(data.length / BATCH_SIZE)} batches`;
+};
+
 export const SensorRankingService = {
   csvUpload,
   getAllSensorRanks,
+  processCSVBatch,
 };

@@ -14,6 +14,16 @@ router.post(
     return SensorRankingController.csvUpload(req, res, next);
   }
 );
+router.post(
+  "/uploadCsv/batch",
+  FileUploadHelper.upload.single("file"),
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.file) {
+      req.body.file = `${req.file.filename}`;
+    }
+    return SensorRankingController.processCSVBatch(req, res, next);
+  }
+);
 
 router.get("/", SensorRankingController.getAllSensorRanks);
 

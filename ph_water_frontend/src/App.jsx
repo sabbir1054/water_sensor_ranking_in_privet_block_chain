@@ -44,7 +44,7 @@ function App() {
       setMessage("");
 
       const res = await axios.post(
-        "http://localhost:5000/api/v1/ranking/uploadCsv",
+        "http://localhost:5000/api/v1/ranking/uploadCsv/batch",
         formData,
         {
           headers: {
@@ -71,7 +71,7 @@ function App() {
     fetch(`http://localhost:5000/api/v1/ranking`)
       .then((res) => res.json())
       .then((data) => setTableData(data?.data));
-  }, [tableData]);
+  }, []);
 
   if (uploading) {
     return <SpinnerOverlay />;

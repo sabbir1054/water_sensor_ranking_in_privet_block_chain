@@ -55,6 +55,117 @@ export class SensorContract extends Contract {
         await ctx.stub.putState(key, Buffer.from(JSON.stringify(sensor)));
         return `DONE`;
     }
+    //batch work
+    @Transaction()
+    @Returns('string')
+    public async batchAddSensorReadings(
+        ctx: Context,
+        jsonData: string
+    ): Promise<string> {
+        interface Reading {
+            SensorID: string;
+            Temp: string;
+            Salinity: string;
+            PH: string;
+            NH4: string;
+            DO: string;
+            CA: string;
+        }
+
+        let readings: Reading[];
+        try {
+            readings = JSON.parse(jsonData);
+        } catch (err) {
+            throw new Error('Invalid JSON format for sensor readings batch.');
+        }
+
+        const updates: Record<string, { totalScore: number; count: number }> =
+            {};
+        let skipped = 0;
+        let failedParse = 0;
+        let failedToWrite = 0;
+
+        for (const r of readings) {
+            try {
+                if (
+                    !r.SensorID ||
+                    !r.Temp ||
+                    !r.PH ||
+                    !r.DO ||
+                    !r.NH4 ||
+                    !r.CA ||
+                    !r.Salinity
+                ) {
+                    skipped++;
+                    continue;
+                }
+
+                const weight = this.calculateWeight(
+                    parseFloat(r.Temp),
+                    parseFloat(r.PH),
+                    parseFloat(r.DO),
+                    parseFloat(r.NH4),
+                    parseFloat(r.CA),
+                    parseFloat(r.Salinity)
+                );
+
+                if (!updates[r.SensorID]) {
+                    updates[r.SensorID] = { totalScore: 0, count: 0 };
+                }
+
+                updates[r.SensorID].totalScore += weight;
+                updates[r.SensorID].count += 1;
+            } catch (e) {
+                failedParse++;
+                continue; // Continue to next reading
+            }
+        }
+
+        for (const SensorID in updates) {
+            try {
+                const key = `SENSOR_${SensorID}`;
+                const dataBuffer = await ctx.stub.getState(key);
+
+                let sensor: SensorPerformance =
+                    dataBuffer.length > 0
+                        ? JSON.parse(dataBuffer.toString())
+                        : {
+                              sensorId: SensorID,
+                              totalScore: 0,
+                              readingCount: 0,
+                              lastUpdated: '',
+                          };
+
+                // Defensive: make sure update exists before applying
+                const update = updates[SensorID];
+                if (!update) {
+                    failedToWrite++;
+                    continue;
+                }
+
+                sensor.totalScore += update.totalScore;
+                sensor.readingCount += update.count;
+                // sensor.lastUpdated = new Date().toString();
+
+                await ctx.stub.putState(
+                    key,
+                    Buffer.from(JSON.stringify(sensor))
+                );
+            } catch (err) {
+                console.error(`❌ Failed to update sensor ${SensorID}:`, err);
+                failedToWrite++;
+                continue;
+            }
+        }
+
+        return JSON.stringify({
+            totalRecords: readings.length,
+            skippedIncomplete: skipped,
+            failedParse,
+            failedToWrite,
+            updatedSensors: Object.keys(updates).length - failedToWrite,
+        });
+    }
 
     private calculateWeight(
         temp: number,

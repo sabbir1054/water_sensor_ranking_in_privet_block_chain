@@ -60,7 +60,8 @@ export class SensorContract extends Contract {
     @Returns('string')
     public async batchAddSensorReadings(
         ctx: Context,
-        jsonData: string
+        jsonData: string,
+        timestamp: string
     ): Promise<string> {
         interface Reading {
             SensorID: string;
@@ -145,7 +146,7 @@ export class SensorContract extends Contract {
 
                 sensor.totalScore += update.totalScore;
                 sensor.readingCount += update.count;
-                // sensor.lastUpdated = new Date().toString();
+                sensor.lastUpdated = timestamp;
 
                 await ctx.stub.putState(
                     key,

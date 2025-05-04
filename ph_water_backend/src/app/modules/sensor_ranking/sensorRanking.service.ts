@@ -164,7 +164,8 @@ const processCSVBatch = async (link: string) => {
     try {
       const response = await contract.submitTransaction(
         "batchAddSensorReadings",
-        JSON.stringify(batch)
+        JSON.stringify(batch),
+        new Date().toString()
       );
       const jsonString = Buffer.from(response).toString("utf8");
       // return jsonString;

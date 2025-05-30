@@ -4,16 +4,21 @@ import { SensorRankingController } from "./sensorRanking.controller";
 
 const router = express.Router();
 
-router.post(
-  "/uploadCsv",
-  FileUploadHelper.upload.single("file"),
-  (req: Request, res: Response, next: NextFunction) => {
-    if (req.file) {
-      req.body.file = `${req.file.filename}`;
-    }
-    return SensorRankingController.csvUpload(req, res, next);
-  }
+// router.post(
+//   "/uploadCsv",
+//   FileUploadHelper.upload.single("file"),
+//   (req: Request, res: Response, next: NextFunction) => {
+//     if (req.file) {
+//       req.body.file = `${req.file.filename}`;
+//     }
+//     return SensorRankingController.csvUpload(req, res, next);
+//   }
+// );
+router.get(
+  "/sensorGraph/:sensorId",
+  SensorRankingController.getSensorGraphData
 );
+router.get("/weightPool", SensorRankingController.getWeightPool);
 router.post(
   "/uploadCsv/batch",
   FileUploadHelper.upload.single("file"),

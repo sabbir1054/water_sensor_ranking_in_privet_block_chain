@@ -3,15 +3,15 @@ import httpStatus from "http-status";
 import catchAsync from "../../../shared/catchAsync";
 import sendResponse from "../../../shared/sendResponse";
 import { SensorRankingService } from "./sensorRanking.service";
-const csvUpload = catchAsync(async (req: Request, res: Response) => {
-  const result = await SensorRankingService.csvUpload(req.body.file);
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Upload done ",
-    data: result,
-  });
-});
+// const csvUpload = catchAsync(async (req: Request, res: Response) => {
+//   const result = await SensorRankingService.csvUpload(req.body.file);
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     success: true,
+//     message: "Upload done ",
+//     data: result,
+//   });
+// });
 
 const processCSVBatch = catchAsync(async (req: Request, res: Response) => {
   const result = await SensorRankingService.processCSVBatch(req.body.file);
@@ -31,8 +31,30 @@ const getAllSensorRanks = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getSensorGraphData = catchAsync(async (req: Request, res: Response) => {
+  const result = await SensorRankingService.getSensorGraphData(
+    req?.params?.sensorId
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "sensor graph data retrieve",
+    data: result,
+  });
+});
+const getWeightPool = catchAsync(async (req: Request, res: Response) => {
+  const result = await SensorRankingService.getWeightPool();
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Weight pool retrieve",
+    data: result,
+  });
+});
 export const SensorRankingController = {
-  csvUpload,
+  // csvUpload,
   processCSVBatch,
   getAllSensorRanks,
+  getWeightPool,
+  getSensorGraphData,
 };

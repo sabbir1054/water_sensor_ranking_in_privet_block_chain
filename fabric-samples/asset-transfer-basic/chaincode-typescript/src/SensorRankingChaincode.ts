@@ -39,12 +39,15 @@ export class SensorContract extends Contract {
     private readonly POOL_KEY = 'WEIGHT_POOL';
     private readonly GRAPH_KEY = 'GRAPH_VIEW';
 
-    private async _getWeightPool(ctx: Context): Promise<WeightPool> {
+    private async _getWeightPool(
+        ctx: Context,
+        timestamp: string
+    ): Promise<WeightPool> {
         const buffer = await ctx.stub.getState(this.POOL_KEY);
         if (!buffer || buffer.length === 0) {
             const initial: WeightPool = {
                 value: 50000,
-                lastUpdated: new Date().toString(),
+                lastUpdated: timestamp,
             };
             await ctx.stub.putState(
                 this.POOL_KEY,
@@ -55,10 +58,14 @@ export class SensorContract extends Contract {
         return JSON.parse(buffer.toString()) as WeightPool;
     }
 
-    private async updateWeightPool(ctx: Context, delta: number): Promise<void> {
-        const pool = await this._getWeightPool(ctx);
+    private async updateWeightPool(
+        ctx: Context,
+        delta: number,
+        timestamp: string
+    ): Promise<void> {
+        const pool = await this._getWeightPool(ctx, timestamp);
         pool.value += delta;
-        pool.lastUpdated = new Date().toString();
+        pool.lastUpdated = timestamp;
         await ctx.stub.putState(
             this.POOL_KEY,
             Buffer.from(JSON.stringify(pool))
@@ -145,7 +152,7 @@ export class SensorContract extends Contract {
             updates[r.SensorID].count += 1;
 
             // Update weight pool and graph view
-            await this.updateWeightPool(ctx, weight > 0 ? -100 : 50);
+            await this.updateWeightPool(ctx, weight > 0 ? -100 : 50, timestamp);
             await this.updateGraphView(ctx, r.SensorID, timestamp, parsed);
         }
 
@@ -177,7 +184,7 @@ export class SensorContract extends Contract {
     @Transaction(false)
     @Returns('string')
     public async getWeightPool(ctx: Context): Promise<string> {
-        const pool = await this._getWeightPool(ctx);
+        const pool = await this._getWeightPool(ctx, new Date().toString());
         return JSON.stringify(pool);
     }
 

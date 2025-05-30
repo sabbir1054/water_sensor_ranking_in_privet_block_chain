@@ -6,7 +6,7 @@ import path from "path";
 import { getContract } from "../../../connection";
 import ApiError from "../../../errors/ApiError";
 
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 1000;
 
 const processCSVBatch = async (link: string) => {
   const contract = await getContract();

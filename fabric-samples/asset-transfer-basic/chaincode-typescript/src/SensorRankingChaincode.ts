@@ -199,6 +199,54 @@ export class SensorContract extends Contract {
         return buffer.length > 0 ? buffer.toString() : '[]';
     }
 
+    @Transaction(false)
+    @Returns('string')
+    public async getAll(ctx: Context): Promise<string> {
+        const allResult = [];
+        const iterator = await ctx.stub.getStateByRange('', '');
+        let result = await iterator.next();
+
+        while (!result.done) {
+            const strValue = Buffer.from(
+                result.value.value.toString()
+            ).toString('utf8');
+            let record;
+            try {
+                record = JSON.parse(strValue);
+            } catch (err) {
+                console.log(err);
+                record = strValue;
+            }
+            allResult.push(record);
+            result = await iterator.next();
+        }
+
+        return JSON.stringify(allResult);
+    }
+    @Transaction(false)
+    @Returns('string')
+    public async getRankedSensors(ctx: Context): Promise<string> {
+        const iterator = await ctx.stub.getStateByRange('SENSOR_', 'SENSOR_~');
+        const sensors: (SensorPerformance & { averageScore: number })[] = [];
+
+        let result = await iterator.next();
+        while (!result.done) {
+            const sensor = JSON.parse(
+                result.value.value.toString()
+            ) as SensorPerformance;
+            const averageScore =
+                sensor.readingCount > 0
+                    ? sensor.totalScore / sensor.readingCount
+                    : 0;
+            sensors.push({ ...sensor, averageScore });
+            result = await iterator.next();
+        }
+        await iterator.close();
+
+        sensors.sort((a, b) => b.averageScore - a.averageScore);
+        return JSON.stringify(sensors);
+    }
+
     private calculateWeight(
         temp: number,
         ph: number,

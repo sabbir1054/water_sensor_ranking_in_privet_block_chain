@@ -6,7 +6,7 @@ import path from "path";
 import { getContract } from "../../../connection";
 import ApiError from "../../../errors/ApiError";
 
-const BATCH_SIZE = 1000;
+const BATCH_SIZE = 100;
 
 const processCSVBatch = async (link: string) => {
   const contract = await getContract();
@@ -67,15 +67,15 @@ const getAllSensorRanks = async () => {
   }
 
   try {
-    const resultBuffer = await contract.evaluateTransaction("getAll");
+    const resultBuffer = await contract.evaluateTransaction("getRankedSensors");
     const jsonString = Buffer.from(resultBuffer).toString("utf8");
-    const sensorRankings = JSON.parse(jsonString);
-
-    return sensorRankings.sort((a: any, b: any) => b.totalScore - a.totalScore);
+    return JSON.parse(jsonString);
   } catch (err) {
+    console.log(err);
+
     throw new ApiError(
       httpStatus.INTERNAL_SERVER_ERROR,
-      "Failed to retrieve sensor rankings"
+      "Failed to retrieve ranked sensors"
     );
   }
 };

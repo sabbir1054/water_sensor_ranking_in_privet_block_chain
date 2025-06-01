@@ -1,4 +1,5 @@
 // ✅ UPDATED services/sensorRankingService.ts
+import pLimit from "@esm2cjs/p-limit";
 import fs from "fs";
 import httpStatus from "http-status";
 import Papa from "papaparse";
@@ -6,20 +7,23 @@ import path from "path";
 import { getContract } from "../../../connection";
 import ApiError from "../../../errors/ApiError";
 
-const BATCH_SIZE = 100;
+const MICRO_BATCH_SIZE = 1000;
+const PARALLEL_LIMIT = 10;
 
 const processCSVBatch = async (link: string) => {
+  const limit = pLimit(PARALLEL_LIMIT);
   const contract = await getContract();
+
   if (!contract) {
     throw new ApiError(httpStatus.NOT_FOUND, "Fabric connection failed.");
   }
 
   const filePath = path.join(process.cwd(), "uploads", path.basename(link));
-
   let fileContent: string;
+
   try {
     fileContent = fs.readFileSync(filePath, "utf8");
-  } catch (err) {
+  } catch {
     throw new ApiError(httpStatus.BAD_REQUEST, "File not found or unreadable.");
   }
 
@@ -42,24 +46,33 @@ const processCSVBatch = async (link: string) => {
     CA: string;
   }>;
 
-  for (let i = 0; i < data.length; i += BATCH_SIZE) {
-    const batch = data.slice(i, i + BATCH_SIZE);
-    try {
-      const response = await contract.submitTransaction(
-        "batchAddSensorReadings",
-        JSON.stringify(batch),
-        new Date().toString()
-      );
-      const jsonString = Buffer.from(response).toString("utf8");
-      console.log(`✅ Batch processed:`, jsonString);
-    } catch (err) {
-      console.error(`❌ Error submitting batch ${i / BATCH_SIZE + 1}:`, err);
-    }
+  const promises: Promise<void>[] = [];
+
+  for (let i = 0; i < data.length; i += MICRO_BATCH_SIZE) {
+    const batch = data.slice(i, i + MICRO_BATCH_SIZE);
+    const timestamp = new Date().toISOString();
+    const batchNumber = Math.floor(i / MICRO_BATCH_SIZE) + 1;
+
+    promises.push(
+      limit(async () => {
+        try {
+          const response = await contract.submitTransaction(
+            "addBatchSensorReadings",
+            JSON.stringify(batch),
+            timestamp
+          );
+          const result = Buffer.from(response).toString("utf8");
+          console.log(`✅ Micro-batch ${batchNumber} processed:`, result);
+        } catch (err) {
+          console.error(`❌ Error in micro-batch ${batchNumber}:`, err);
+        }
+      })
+    );
   }
 
-  return `✅ All ${data.length} records processed in ${Math.ceil(data.length / BATCH_SIZE)} batches.`;
+  await Promise.allSettled(promises);
+  return `✅ All ${data.length} records processed in ${Math.ceil(data.length / MICRO_BATCH_SIZE)} micro-batches.`;
 };
-
 const getAllSensorRanks = async () => {
   const contract = await getContract();
   if (!contract) {

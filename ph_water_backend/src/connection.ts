@@ -49,7 +49,7 @@ export async function initFabric(): Promise<Contract> {
     signer: await newSigner(),
     hash: hash.sha256,
     evaluateOptions: () => ({ deadline: Date.now() + 150000 }),
-    endorseOptions: () => ({ deadline: Date.now() + 15000 }),
+    endorseOptions: () => ({ deadline: Date.now() + 150000 }),
     submitOptions: () => ({ deadline: Date.now() + 150000 }),
     commitStatusOptions: () => ({ deadline: Date.now() + 60000 }),
   });

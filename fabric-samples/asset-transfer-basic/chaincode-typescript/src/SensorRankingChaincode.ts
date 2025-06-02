@@ -1,4 +1,4 @@
-// ✅ FIXED CHAINCODE: sensorContract.ts
+// ✅ FULLY CONFLICT-FREE CHAINCODE WITH BATCH SUPPORT
 import {
     Context,
     Contract,
@@ -6,59 +6,31 @@ import {
     Returns,
     Transaction,
 } from 'fabric-contract-api';
-
-interface SensorPerformance {
-    sensorId: string;
-    totalScore: number;
-    readingCount: number;
-    lastUpdated: string;
+// interface SensorPerformance {
+//     sensorId: string;
+//     totalScore: number;
+//     readingCount: number;
+//     lastUpdated: string;
+// }
+interface TimeSeriesPoint {
+    timestamp: string;
+    pH: number;
+    Moisture: number;
+    nh4: number;
+    doValue: number;
+    ca: number;
+    temp: number;
+    salinity: number;
 }
 
 @Info({
     title: 'SensorContract',
-    description: 'Smart contract for ranking water sensors',
+    description: 'Smart contract for conflict-free water sensor data ingestion',
 })
 export class SensorContract extends Contract {
     @Transaction()
     @Returns('string')
-    public async addSensorReading(
-        ctx: Context,
-        sensorId: string,
-        temp: string,
-        ph: string,
-        doValue: string,
-        nh4: string,
-        ca: string,
-        salinity: string
-    ): Promise<string> {
-        const key = `SENSOR_${sensorId}`;
-
-        const dataBuffer = await ctx.stub.getState(key);
-
-        let sensor: SensorPerformance =
-            dataBuffer.length > 0
-                ? JSON.parse(dataBuffer.toString())
-                : { sensorId, totalScore: 0, readingCount: 0, lastUpdated: '' };
-
-        const weight = await this.calculateWeight(
-            parseFloat(temp),
-            parseFloat(ph),
-            parseFloat(doValue),
-            parseFloat(nh4),
-            parseFloat(ca),
-            parseFloat(salinity)
-        );
-        sensor.totalScore += weight;
-        sensor.readingCount += 1;
-        sensor.lastUpdated = new Date().toString();
-
-        await ctx.stub.putState(key, Buffer.from(JSON.stringify(sensor)));
-        return `DONE`;
-    }
-    //batch work
-    @Transaction()
-    @Returns('string')
-    public async batchAddSensorReadings(
+    public async addBatchSensorReadings(
         ctx: Context,
         jsonData: string,
         timestamp: string
@@ -76,98 +48,176 @@ export class SensorContract extends Contract {
         let readings: Reading[];
         try {
             readings = JSON.parse(jsonData);
-        } catch (err) {
+        } catch {
             throw new Error('Invalid JSON format for sensor readings batch.');
         }
 
-        const updates: Record<string, { totalScore: number; count: number }> =
-            {};
-        let skipped = 0;
-        let failedParse = 0;
-        let failedToWrite = 0;
+        let count = 0;
 
         for (const r of readings) {
-            try {
-                if (
-                    !r.SensorID ||
-                    !r.Temp ||
-                    !r.PH ||
-                    !r.DO ||
-                    !r.NH4 ||
-                    !r.CA ||
-                    !r.Salinity
-                ) {
-                    skipped++;
-                    continue;
-                }
-
-                const weight = this.calculateWeight(
-                    parseFloat(r.Temp),
-                    parseFloat(r.PH),
-                    parseFloat(r.DO),
-                    parseFloat(r.NH4),
-                    parseFloat(r.CA),
-                    parseFloat(r.Salinity)
-                );
-
-                if (!updates[r.SensorID]) {
-                    updates[r.SensorID] = { totalScore: 0, count: 0 };
-                }
-
-                updates[r.SensorID].totalScore += weight;
-                updates[r.SensorID].count += 1;
-            } catch (e) {
-                failedParse++;
-                continue; // Continue to next reading
-            }
-        }
-
-        for (const SensorID in updates) {
-            try {
-                const key = `SENSOR_${SensorID}`;
-                const dataBuffer = await ctx.stub.getState(key);
-
-                let sensor: SensorPerformance =
-                    dataBuffer.length > 0
-                        ? JSON.parse(dataBuffer.toString())
-                        : {
-                              sensorId: SensorID,
-                              totalScore: 0,
-                              readingCount: 0,
-                              lastUpdated: '',
-                          };
-
-                // Defensive: make sure update exists before applying
-                const update = updates[SensorID];
-                if (!update) {
-                    failedToWrite++;
-                    continue;
-                }
-
-                sensor.totalScore += update.totalScore;
-                sensor.readingCount += update.count;
-                sensor.lastUpdated = timestamp;
-
-                await ctx.stub.putState(
-                    key,
-                    Buffer.from(JSON.stringify(sensor))
-                );
-            } catch (err) {
-                console.error(`❌ Failed to update sensor ${SensorID}:`, err);
-                failedToWrite++;
+            if (
+                !r.SensorID ||
+                !r.Temp ||
+                !r.PH ||
+                !r.DO ||
+                !r.NH4 ||
+                !r.CA ||
+                !r.Salinity
+            )
                 continue;
-            }
+
+            const parsed = {
+                temp: parseFloat(r.Temp),
+                pH: parseFloat(r.PH),
+                doValue: parseFloat(r.DO),
+                nh4: parseFloat(r.NH4),
+                ca: parseFloat(r.CA),
+                salinity: parseFloat(r.Salinity),
+                Moisture: parseFloat(r.Temp),
+            };
+
+            const weight = this.calculateWeight(
+                parsed.temp,
+                parsed.pH,
+                parsed.doValue,
+                parsed.nh4,
+                parsed.ca,
+                parsed.salinity
+            );
+
+            const keySuffix = `${timestamp}-${count}`;
+            const readingKey = ctx.stub.createCompositeKey('SENSOR_READING', [
+                r.SensorID,
+                keySuffix,
+            ]);
+            const weightKey = ctx.stub.createCompositeKey('WEIGHT_POOL_LOG', [
+                r.SensorID,
+                keySuffix,
+            ]);
+            const graphKey = ctx.stub.createCompositeKey('GRAPH_VIEW_LOG', [
+                r.SensorID,
+                keySuffix,
+            ]);
+
+            await ctx.stub.putState(
+                readingKey,
+                Buffer.from(
+                    JSON.stringify({
+                        sensorId: r.SensorID,
+                        score: weight,
+                        timestamp,
+                        ...parsed,
+                    })
+                )
+            );
+
+            await ctx.stub.putState(
+                weightKey,
+                Buffer.from(
+                    JSON.stringify({
+                        delta: weight > 0 ? -100 : 50,
+                        timestamp,
+                    })
+                )
+            );
+
+            await ctx.stub.putState(
+                graphKey,
+                Buffer.from(JSON.stringify({ timestamp, ...parsed }))
+            );
+            count++;
         }
+
+        return `✅ Micro-batch processed ${count} readings (fully conflict-free).`;
+    }
+    @Transaction(false)
+    @Returns('string')
+    public async getWeightPool(ctx: Context): Promise<string> {
+        const iterator = await ctx.stub.getStateByPartialCompositeKey(
+            'WEIGHT_POOL_LOG',
+            []
+        );
+        let total = 50000;
+        let result = await iterator.next();
+
+        while (!result.done) {
+            const log = JSON.parse(result.value.value.toString());
+            total += log.delta;
+            result = await iterator.next();
+        }
+        await iterator.close();
 
         return JSON.stringify({
-            totalRecords: readings.length,
-            skippedIncomplete: skipped,
-            failedParse,
-            failedToWrite,
-            updatedSensors: Object.keys(updates).length - failedToWrite,
+            value: total,
+            lastUpdated: new Date().toString(),
         });
     }
 
+    @Transaction(false)
+    @Returns('string')
+    public async getRankedSensors(ctx: Context): Promise<string> {
+        const iterator = await ctx.stub.getStateByPartialCompositeKey(
+            'SENSOR_READING',
+            []
+        );
+        const sensorScores: Record<string, { total: number; count: number }> =
+            {};
+
+        let result = await iterator.next();
+        while (!result.done) {
+            const record = JSON.parse(result.value.value.toString());
+            const { sensorId, score } = record;
+            if (!sensorScores[sensorId]) {
+                sensorScores[sensorId] = { total: 0, count: 0 };
+            }
+            sensorScores[sensorId].total += score;
+            sensorScores[sensorId].count += 1;
+
+            result = await iterator.next();
+        }
+        await iterator.close();
+
+        const rankings = Object.entries(sensorScores).map(
+            ([sensorId, { total, count }]) => ({
+                sensorId,
+                totalScore: total,
+                readingCount: count,
+                averageScore: total / count,
+            })
+        );
+
+        rankings.sort((a, b) => b.averageScore - a.averageScore);
+        return JSON.stringify(rankings);
+    }
+    @Transaction(false)
+    @Returns('string')
+    public async getGraphViewBySensor(
+        ctx: Context,
+        sensorId: string
+    ): Promise<string> {
+        const iterator = await ctx.stub.getStateByPartialCompositeKey(
+            'GRAPH_VIEW_LOG',
+            [sensorId]
+        );
+        const graphData: TimeSeriesPoint[] = [];
+        let result = await iterator.next();
+
+        while (!result.done) {
+            const record = JSON.parse(
+                result.value.value.toString()
+            ) as TimeSeriesPoint;
+            graphData.push(record);
+            result = await iterator.next();
+        }
+        await iterator.close();
+
+        graphData.sort(
+            (a, b) =>
+                new Date(a.timestamp).getTime() -
+                new Date(b.timestamp).getTime()
+        );
+        return JSON.stringify(graphData);
+    }
     private calculateWeight(
         temp: number,
         ph: number,
@@ -177,7 +227,6 @@ export class SensorContract extends Contract {
         salinity: number
     ): number {
         let score = 0;
-
         if (temp >= 20 && temp <= 30) score++;
         else score--;
         if (ph >= 6.5 && ph <= 8.5) score++;
@@ -190,125 +239,6 @@ export class SensorContract extends Contract {
         else score--;
         if (salinity >= 0 && salinity <= 0.5) score++;
         else score--;
-
-        return score; // Range: -6 to +6
-    }
-
-    @Transaction(false)
-    @Returns('string')
-    public async getSensor(ctx: Context, sensorId: string): Promise<string> {
-        const key = `SENSOR_${sensorId}`;
-        const buffer = await ctx.stub.getState(key);
-        if (!buffer || buffer.length === 0) {
-            throw new Error(`Sensor ${sensorId} not found.`);
-        }
-        return buffer.toString();
-    }
-
-    @Transaction(false)
-    @Returns('string')
-    public async getAllSensors(ctx: Context): Promise<string> {
-        const iterator: any = await ctx.stub.getStateByRange(
-            'SENSOR_',
-            'SENSOR_~'
-        );
-        const result: SensorPerformance[] = [];
-
-        for await (const res of iterator) {
-            const sensor = JSON.parse(
-                res.value.toString()
-            ) as SensorPerformance;
-            result.push(sensor);
-        }
-
-        const ranked = result
-            .map((s) => ({
-                ...s,
-                averageScore: s.totalScore / s.readingCount,
-            }))
-            .sort((a, b) => b.averageScore - a.averageScore);
-
-        return JSON.stringify(ranked);
-    }
-
-    @Transaction(false)
-    @Returns('Buffer')
-    public async getSensorsPaginated(
-        ctx: Context,
-        pageSizeStr: string,
-        bookmark: string
-    ): Promise<Buffer> {
-        let pageSize = parseInt(pageSizeStr, 10);
-        if (isNaN(pageSize) || pageSize <= 0) {
-            pageSize = 10;
-        }
-
-        try {
-            const response = await ctx.stub.getStateByRangeWithPagination(
-                'SENSOR_',
-                'SENSOR_~',
-                pageSize,
-                bookmark || ''
-            );
-
-            const results: any[] = [];
-            const iterator = response.iterator;
-            let result = await iterator.next();
-
-            while (!result.done) {
-                try {
-                    const sensor = JSON.parse(result.value.value.toString());
-                    const averageScore =
-                        sensor.readingCount > 0
-                            ? sensor.totalScore / sensor.readingCount
-                            : 0;
-
-                    results.push({
-                        ...sensor,
-                        averageScore,
-                    });
-                } catch (err) {
-                    console.error('Corrupted entry:', result.value.key);
-                }
-                result = await iterator.next();
-            }
-
-            await iterator.close();
-
-            const responsePayload = JSON.stringify({
-                results,
-                bookmark: response.metadata?.bookmark ?? '',
-            });
-
-            return Buffer.from(responsePayload);
-        } catch (err) {
-            throw new Error(
-                'Failed to paginate sensor data: ' + (err as Error).message
-            );
-        }
-    }
-
-    // my trying
-    @Transaction(false)
-    @Returns('string')
-    public async getAll(ctx: Context): Promise<string> {
-        const allResult = [];
-        const iterator = await ctx.stub.getStateByRange('', '');
-        let result = await iterator.next();
-        while (!result.done) {
-            const strValue = Buffer.from(
-                result.value.value.toString()
-            ).toString('utf8');
-            let record;
-            try {
-                record = JSON.parse(strValue) as SensorPerformance;
-            } catch (err) {
-                console.log(err);
-                record = strValue;
-            }
-            allResult.push(record);
-            result = await iterator.next();
-        }
-        return JSON.stringify(allResult);
+        return score;
     }
 }

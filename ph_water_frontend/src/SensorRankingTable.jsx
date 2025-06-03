@@ -1,4 +1,4 @@
-import React from "react";
+import { Link } from "react-router-dom";
 
 const SensorRankingTable = ({ data }) => {
   return (
@@ -17,10 +17,11 @@ const SensorRankingTable = ({ data }) => {
               <th className="px-4 py-3">Total Score</th>
               <th className="px-4 py-3">Readings Count</th>
               <th className="px-4 py-3">Last Updated</th>
+              <th className="px-4 py-3">Show Details</th>
             </tr>
           </thead>
           <tbody>
-            {data.map((sensor, index) => (
+            {data?.map((sensor, index) => (
               <tr
                 key={sensor.sensorId}
                 className={`border-b border-gray-700 ${
@@ -37,6 +38,11 @@ const SensorRankingTable = ({ data }) => {
                 <td className="px-4 py-2">{sensor.readingCount}</td>
                 <td className="px-4 py-2 text-sm text-gray-400">
                   {new Date(sensor.lastUpdated).toLocaleString()}
+                </td>
+                <td>
+                  <Link to={`/${sensor?.sensorId}`} className="text-blue underline">
+                    Details
+                  </Link>
                 </td>
               </tr>
             ))}

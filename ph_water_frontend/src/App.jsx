@@ -1,7 +1,8 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast, Toaster } from "sonner";
+import RankingChart from "./RankingChart";
 import SensorRankingTable from "./SensorRankingTable";
 import SpinnerOverlay from "./SpinnerOverlay";
 
@@ -11,7 +12,7 @@ function App() {
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
-
+  const [weightPool, setWeghtPool] = useState(0);
   const onDrop = (acceptedFiles) => {
     const selectedFile = acceptedFiles[0];
     if (selectedFile && selectedFile.type === "text/csv") {
@@ -28,7 +29,16 @@ function App() {
     accept: { "text/csv": [".csv"] },
     multiple: false,
   });
-
+  const getWeightPool = () => {
+    fetch(`http://localhost:5000/api/v1/ranking/weightPool`)
+      .then((res) => res.json())
+      .then((data) => setWeghtPool(data?.data?.value));
+  };
+  const getRanking = () => {
+    fetch(`http://localhost:5000/api/v1/ranking`)
+      .then((res) => res.json())
+      .then((data) => setTableData(data?.data));
+  };
   const handleUpload = async () => {
     if (!file) {
       setMessage("Please select a CSV file before submitting.");
@@ -55,9 +65,12 @@ function App() {
       console.log(res);
 
       setMessage("File uploaded successfully.");
-      console.log(res.data);
-      if (res?.data?.statusCode === 200) {
+      console.log(res?.data?.statusCode);
+      if (res?.data?.statusCode == 200) {
         toast.success("Upload done");
+        getRanking();
+
+        getWeightPool();
       }
     } catch (err) {
       console.error(err);
@@ -68,10 +81,10 @@ function App() {
   };
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/v1/ranking`)
-      .then((res) => res.json())
-      .then((data) => setTableData(data?.data));
+    getRanking();
+    getWeightPool();
   }, []);
+  console.log(tableData);
 
   if (uploading) {
     return <SpinnerOverlay />;
@@ -79,7 +92,7 @@ function App() {
 
   return (
     <>
-      <Toaster />
+      <Toaster position="top" />
       {/* Form for upload CV */}
       <div>
         <div className="max-w-md mx-auto mt-10 p-6 bg-[#1e1e2f] text-white rounded-lg shadow-lg border border-gray-700">
@@ -116,7 +129,11 @@ function App() {
             {uploading ? "Uploading..." : "Submit CSV"}
           </button>
         </div>
-        <SensorRankingTable data={tableData} />
+        <h1 className="text-xl text-white text-center">
+          Current Weight of the pool {weightPool}
+        </h1>
+        {tableData?.length > 0 && <SensorRankingTable data={tableData} />}
+        {tableData?.length > 0 && <RankingChart data={tableData} />}
       </div>
     </>
   );

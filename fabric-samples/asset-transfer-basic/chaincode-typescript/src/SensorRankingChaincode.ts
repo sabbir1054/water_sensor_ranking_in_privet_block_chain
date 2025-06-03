@@ -241,4 +241,66 @@ export class SensorContract extends Contract {
         else score--;
         return score;
     }
+    @Transaction(false)
+    @Returns('string')
+    public async getSensorAveragesByKeyword(
+        ctx: Context,
+        keyword: string
+    ): Promise<string> {
+        // Case-insensitive keyword mapping
+        const normalized = keyword.toLowerCase();
+
+        const keyMap: Record<string, keyof TimeSeriesPoint> = {
+            temp: 'temp',
+            ph: 'pH',
+            do: 'doValue',
+            nh4: 'nh4',
+            ca: 'ca',
+            salinity: 'salinity',
+            moisture: 'Moisture',
+        };
+
+        const field = keyMap[normalized];
+        if (!field) {
+            throw new Error(`Invalid keyword: ${keyword}`);
+        }
+
+        // Read all GRAPH_VIEW_LOG entries
+        const iterator = await ctx.stub.getStateByPartialCompositeKey(
+            'GRAPH_VIEW_LOG',
+            []
+        );
+        const sensorData: Record<string, { total: number; count: number }> = {};
+
+        let result = await iterator.next();
+        while (!result.done) {
+            const compositeKey = ctx.stub.splitCompositeKey(result.value.key);
+            const sensorId = compositeKey.attributes[0];
+
+            const data = JSON.parse(
+                result.value.value.toString()
+            ) as TimeSeriesPoint;
+            const value = data[field];
+
+            if (typeof value === 'number') {
+                if (!sensorData[sensorId]) {
+                    sensorData[sensorId] = { total: 0, count: 0 };
+                }
+                sensorData[sensorId].total += value;
+                sensorData[sensorId].count += 1;
+            }
+
+            result = await iterator.next();
+        }
+        await iterator.close();
+
+        const resultArray = Object.entries(sensorData).map(
+            ([sensorId, { total, count }]) => ({
+                sensorId,
+                average: parseFloat((total / count).toFixed(2)), // Optional: round to 2 decimals
+            })
+        );
+
+        return JSON.stringify(resultArray);
+    }
 }

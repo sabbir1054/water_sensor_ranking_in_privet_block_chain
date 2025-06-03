@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 const SensorRankingTable = ({ data }) => {
   return (
-    <div className="max-w-5xl mx-auto mt-10 p-4 bg-[#0f172a] rounded-lg shadow-lg text-white">
+    <div className="mt-10 p-4 bg-[#0f172a] rounded-lg shadow-lg text-white">
       <h2 className="text-2xl font-semibold mb-4">
         Sensor Ranking{" "}
         <span className="text-lg">{`(Reload page after file upload)`}</span>{" "}
@@ -40,7 +40,10 @@ const SensorRankingTable = ({ data }) => {
                   {new Date(sensor.lastUpdated).toLocaleString()}
                 </td>
                 <td>
-                  <Link to={`/${sensor?.sensorId}`} className="text-blue underline">
+                  <Link
+                    to={`/${sensor?.sensorId}`}
+                    className="text-blue underline"
+                  >
                     Details
                   </Link>
                 </td>

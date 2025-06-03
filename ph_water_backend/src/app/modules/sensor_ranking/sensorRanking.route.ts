@@ -31,5 +31,9 @@ router.post(
 );
 
 router.get("/", SensorRankingController.getAllSensorRanks);
+router.get(
+  "/getSensorAveragesByKeyword/:keyword",
+  SensorRankingController.getSensorAveragesByKeyword
+);
 
 export const SensorRangkigRoutes = router;

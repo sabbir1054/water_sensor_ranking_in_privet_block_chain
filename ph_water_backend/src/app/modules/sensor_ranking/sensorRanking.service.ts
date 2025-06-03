@@ -136,10 +136,40 @@ const getWeightPool = async () => {
     );
   }
 };
+const getSensorAveragesByKeyword = async (keyword: string) => {
+  console.log(keyword);
 
+  if (!keyword) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Keyword is required");
+  }
+
+  const contract = await getContract();
+  if (!contract) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Fabric connection failed.");
+  }
+
+  try {
+    const resultBuffer = await contract.evaluateTransaction(
+      "getSensorAveragesByKeyword",
+      keyword
+    );
+    console.log(resultBuffer);
+
+    const jsonString = Buffer.from(resultBuffer).toString("utf8");
+    console.log(jsonString);
+    return JSON.parse(jsonString);
+  } catch (err) {
+    console.error("🔴 getSensorAveragesByKeyword error:", err);
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      `Failed to get averages for keyword "${keyword}"`
+    );
+  }
+};
 export const SensorRankingService = {
   processCSVBatch,
   getAllSensorRanks,
   getSensorGraphData,
   getWeightPool,
+  getSensorAveragesByKeyword,
 };

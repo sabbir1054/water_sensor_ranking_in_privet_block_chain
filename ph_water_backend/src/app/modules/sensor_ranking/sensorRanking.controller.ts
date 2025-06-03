@@ -51,10 +51,24 @@ const getWeightPool = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getSensorAveragesByKeyword = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await SensorRankingService.getSensorAveragesByKeyword(
+      req?.params?.keyword
+    );
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "retrive graph data",
+      data: result,
+    });
+  }
+);
 export const SensorRankingController = {
   // csvUpload,
   processCSVBatch,
   getAllSensorRanks,
   getWeightPool,
   getSensorGraphData,
+  getSensorAveragesByKeyword,
 };

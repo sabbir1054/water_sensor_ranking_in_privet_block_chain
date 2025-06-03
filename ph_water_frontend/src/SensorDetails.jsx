@@ -58,7 +58,6 @@ const SensorDetails = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-
         {/* pH over time */}
         <div className="bg-white rounded-lg p-4 shadow">
           <h3 className="text-lg font-bold mb-2">pH Over Time</h3>
@@ -75,9 +74,83 @@ const SensorDetails = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Scatter plot Moisture */}
         <div className="bg-white rounded-lg p-4 shadow">
+          <h3 className="text-lg font-bold mb-2">Temperature Over Time</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={data}>
+              <Line type="monotone" dataKey="temp" stroke="#82ca9d" />
+              <CartesianGrid stroke="#ccc" />
+              <XAxis
+                dataKey="timestamp"
+                tickFormatter={(t) => t.slice(11, 19)}
+              />
+              <YAxis />
+              <Tooltip />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="bg-white rounded-lg p-4 shadow">
+          <h3 className="text-lg font-bold mb-2">CA Over Time</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={data}>
+              <Line type="monotone" dataKey="ca" stroke="#82ca9d" />
+              <CartesianGrid stroke="#ccc" />
+              <XAxis
+                dataKey="timestamp"
+                tickFormatter={(t) => t.slice(11, 19)}
+              />
+              <YAxis />
+              <Tooltip />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="bg-white rounded-lg p-4 shadow">
+          <h3 className="text-lg font-bold mb-2">Do Values Over Time</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={data}>
+              <Line type="monotone" dataKey="doValue" stroke="#82ca9d" />
+              <CartesianGrid stroke="#ccc" />
+              <XAxis
+                dataKey="timestamp"
+                tickFormatter={(t) => t.slice(11, 19)}
+              />
+              <YAxis />
+              <Tooltip />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="bg-white rounded-lg p-4 shadow">
+          <h3 className="text-lg font-bold mb-2">NH4 Over Time</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={data}>
+              <Line type="monotone" dataKey="nh4" stroke="#82ca9d" />
+              <CartesianGrid stroke="#ccc" />
+              <XAxis
+                dataKey="timestamp"
+                tickFormatter={(t) => t.slice(11, 19)}
+              />
+              <YAxis />
+              <Tooltip />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="bg-white rounded-lg p-4 shadow">
+          <h3 className="text-lg font-bold mb-2">Salinity Over Time</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={data}>
+              <Line type="monotone" dataKey="salinity" stroke="#82ca9d" />
+              <CartesianGrid stroke="#ccc" />
+              <XAxis
+                dataKey="timestamp"
+                tickFormatter={(t) => t.slice(11, 19)}
+              />
+              <YAxis />
+              <Tooltip />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        {/* Scatter plot Moisture */}
+        {/* <div className="bg-white rounded-lg p-4 shadow">
           <h3 className="text-lg font-bold mb-2">Moisture Scatter Plot</h3>
           <ResponsiveContainer width="100%" height={300}>
             <ScatterChart>
@@ -93,10 +166,9 @@ const SensorDetails = () => {
               <Scatter name="Moisture" data={data} fill="#8884d8" />
             </ScatterChart>
           </ResponsiveContainer>
-        </div>
-
+        </div> */}
         {/* Scatter plot pH */}
-        <div className="bg-white rounded-lg p-4 shadow">
+        {/* <div className="bg-white rounded-lg p-4 shadow">
           <h3 className="text-lg font-bold mb-2">pH Scatter Plot</h3>
           <ResponsiveContainer width="100%" height={300}>
             <ScatterChart>
@@ -112,10 +184,9 @@ const SensorDetails = () => {
               <Scatter name="pH" data={data} fill="#82ca9d" />
             </ScatterChart>
           </ResponsiveContainer>
-        </div>
-
+        </div> */}
         {/* Composite score scatter plot */}
-        <div className="bg-white rounded-lg p-4 shadow col-span-1 md:col-span-2">
+        {/* <div className="bg-white rounded-lg p-4 shadow col-span-1 md:col-span-2">
           <h3 className="text-lg font-bold mb-2">Composite Score Over Time</h3>
           <ResponsiveContainer width="100%" height={300}>
             <ScatterChart>
@@ -139,7 +210,7 @@ const SensorDetails = () => {
               />
             </ScatterChart>
           </ResponsiveContainer>
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -35,5 +35,12 @@ router.get(
   "/getSensorAveragesByKeyword/:keyword",
   SensorRankingController.getSensorAveragesByKeyword
 );
-
+router.get(
+  "/getNodeActivityOverTime",
+  SensorRankingController.getNodeActivityOverTime
+);
+router.get(
+  "/getWeightPoolOverTime",
+  SensorRankingController.getWeightPoolOverTime
+);
 export const SensorRangkigRoutes = router;

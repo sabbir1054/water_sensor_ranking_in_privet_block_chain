@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast, Toaster } from "sonner";
 import { AvgValueAllSensor } from "./AvgValueAllSensor";
+import CentralWeightPoolGraph from "./CentralWeightPoolGraph";
+import NodeActivityGraph from "./NodeActivityGraph";
 import RankingChart from "./RankingChart";
 import SensorRankingTable from "./SensorRankingTable";
 import SpinnerOverlay from "./SpinnerOverlay";
@@ -72,6 +74,7 @@ function App() {
         getRanking();
         getWeightPool();
         setMessage("File uploaded successfully.");
+        setFile(null);
       }
     } catch (err) {
       console.error(err);
@@ -148,18 +151,21 @@ function App() {
           </div>
         )}
         {/* scatter plots */}
-        <AvgValueAllSensor />
-
-        <div className="container mx-auto bg-[#1e1e2f] p-6 rounded-xl border border-gray-700 shadow-md">
-          <h2 className="text-2xl font-semibold mb-4 text-center">
-            Sensor Ranking Table
-          </h2>
-          {tableData?.length > 0 ? (
-            <SensorRankingTable data={tableData} />
-          ) : (
-            <p className="text-gray-400 text-center">No data available.</p>
-          )}
-        </div>
+        {tableData?.length > 0 && <AvgValueAllSensor />}
+        {tableData?.length > 0 && <NodeActivityGraph />}
+        {tableData?.length > 0 && <CentralWeightPoolGraph />}
+        {tableData?.length > 0 && (
+          <div className="container mx-auto bg-[#1e1e2f] p-6 rounded-xl border border-gray-700 shadow-md">
+            <h2 className="text-2xl font-semibold mb-4 text-center">
+              Sensor Ranking Table
+            </h2>
+            {tableData?.length > 0 ? (
+              <SensorRankingTable data={tableData} />
+            ) : (
+              <p className="text-gray-400 text-center">No data available.</p>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

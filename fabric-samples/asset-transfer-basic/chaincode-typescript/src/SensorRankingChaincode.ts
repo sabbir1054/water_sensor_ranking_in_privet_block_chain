@@ -1,4 +1,3 @@
-// ✅ FULLY CONFLICT-FREE CHAINCODE WITH BATCH SUPPORT
 import {
     Context,
     Contract,
@@ -6,12 +5,7 @@ import {
     Returns,
     Transaction,
 } from 'fabric-contract-api';
-// interface SensorPerformance {
-//     sensorId: string;
-//     totalScore: number;
-//     readingCount: number;
-//     lastUpdated: string;
-// }
+
 interface TimeSeriesPoint {
     timestamp: string;
     pH: number;
@@ -86,6 +80,7 @@ export class SensorContract extends Contract {
             );
 
             const keySuffix = `${timestamp}-${count}`;
+
             const readingKey = ctx.stub.createCompositeKey('SENSOR_READING', [
                 r.SensorID,
                 keySuffix,
@@ -98,6 +93,10 @@ export class SensorContract extends Contract {
                 r.SensorID,
                 keySuffix,
             ]);
+            const activityKey = ctx.stub.createCompositeKey(
+                'NODE_ACTIVITY_LOG',
+                [r.SensorID, keySuffix]
+            );
 
             await ctx.stub.putState(
                 readingKey,
@@ -125,11 +124,18 @@ export class SensorContract extends Contract {
                 graphKey,
                 Buffer.from(JSON.stringify({ timestamp, ...parsed }))
             );
+
+            await ctx.stub.putState(
+                activityKey,
+                Buffer.from(JSON.stringify({ timestamp }))
+            );
+
             count++;
         }
 
         return `✅ Micro-batch processed ${count} readings (fully conflict-free).`;
     }
+
     @Transaction(false)
     @Returns('string')
     public async getWeightPool(ctx: Context): Promise<string> {
@@ -151,6 +157,45 @@ export class SensorContract extends Contract {
             value: total,
             lastUpdated: new Date().toString(),
         });
+    }
+
+    // ✅ NEW METHOD: Return weight pool changes over time for chart
+    @Transaction(false)
+    @Returns('string')
+    public async getWeightPoolOverTime(ctx: Context): Promise<string> {
+        const iterator = await ctx.stub.getStateByPartialCompositeKey(
+            'WEIGHT_POOL_LOG',
+            []
+        );
+
+        const records: { timestamp: string; delta: number }[] = [];
+
+        let result = await iterator.next();
+        while (!result.done) {
+            const data = JSON.parse(result.value.value.toString());
+            records.push({
+                timestamp: data.timestamp,
+                delta: data.delta,
+            });
+            result = await iterator.next();
+        }
+        await iterator.close();
+
+        // Sort by timestamp
+        records.sort(
+            (a, b) =>
+                new Date(a.timestamp).getTime() -
+                new Date(b.timestamp).getTime()
+        );
+
+        const output: { time: number; weight: number }[] = [];
+        let total = 50000;
+        for (let i = 0; i < records.length; i++) {
+            total += records[i].delta;
+            output.push({ time: i + 1, weight: total });
+        }
+
+        return JSON.stringify(output);
     }
 
     @Transaction(false)
@@ -189,6 +234,7 @@ export class SensorContract extends Contract {
         rankings.sort((a, b) => b.averageScore - a.averageScore);
         return JSON.stringify(rankings);
     }
+
     @Transaction(false)
     @Returns('string')
     public async getGraphViewBySensor(
@@ -218,38 +264,14 @@ export class SensorContract extends Contract {
         );
         return JSON.stringify(graphData);
     }
-    private calculateWeight(
-        temp: number,
-        ph: number,
-        doValue: number,
-        nh4: number,
-        ca: number,
-        salinity: number
-    ): number {
-        let score = 0;
-        if (temp >= 20 && temp <= 30) score++;
-        else score--;
-        if (ph >= 6.5 && ph <= 8.5) score++;
-        else score--;
-        if (doValue >= 5 && doValue <= 12) score++;
-        else score--;
-        if (nh4 >= 0 && nh4 <= 50) score++;
-        else score--;
-        if (ca >= 3 && ca <= 10) score++;
-        else score--;
-        if (salinity >= 0 && salinity <= 0.5) score++;
-        else score--;
-        return score;
-    }
+
     @Transaction(false)
     @Returns('string')
     public async getSensorAveragesByKeyword(
         ctx: Context,
         keyword: string
     ): Promise<string> {
-        // Case-insensitive keyword mapping
         const normalized = keyword.toLowerCase();
-
         const keyMap: Record<string, keyof TimeSeriesPoint> = {
             temp: 'temp',
             ph: 'pH',
@@ -265,7 +287,6 @@ export class SensorContract extends Contract {
             throw new Error(`Invalid keyword: ${keyword}`);
         }
 
-        // Read all GRAPH_VIEW_LOG entries
         const iterator = await ctx.stub.getStateByPartialCompositeKey(
             'GRAPH_VIEW_LOG',
             []
@@ -297,10 +318,61 @@ export class SensorContract extends Contract {
         const resultArray = Object.entries(sensorData).map(
             ([sensorId, { total, count }]) => ({
                 sensorId,
-                average: parseFloat((total / count).toFixed(2)), // Optional: round to 2 decimals
+                average: parseFloat((total / count).toFixed(2)),
             })
         );
 
         return JSON.stringify(resultArray);
+    }
+
+    @Transaction(false)
+    @Returns('string')
+    public async getNodeActivityOverTime(ctx: Context): Promise<string> {
+        const iterator = await ctx.stub.getStateByPartialCompositeKey(
+            'NODE_ACTIVITY_LOG',
+            []
+        );
+        const activityLog: { time: string; nodeId: string }[] = [];
+
+        let result = await iterator.next();
+        while (!result.done) {
+            const compositeKey = ctx.stub.splitCompositeKey(result.value.key);
+            const nodeId = compositeKey.attributes[0];
+            const { timestamp } = JSON.parse(result.value.value.toString());
+            activityLog.push({ time: timestamp, nodeId });
+            result = await iterator.next();
+        }
+        await iterator.close();
+
+        activityLog.sort(
+            (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
+        );
+
+        return JSON.stringify(activityLog);
+    }
+
+    private calculateWeight(
+        temp: number,
+        ph: number,
+        doValue: number,
+        nh4: number,
+        ca: number,
+        salinity: number
+    ): number {
+        let score = 0;
+        if (temp >= 20 && temp <= 30) score++;
+        else score--;
+        if (ph >= 6.5 && ph <= 8.5) score++;
+        else score--;
+        if (doValue >= 5 && doValue <= 12) score++;
+        else score--;
+        if (nh4 >= 0 && nh4 <= 50) score++;
+        else score--;
+        if (ca >= 3 && ca <= 10) score++;
+        else score--;
+        if (salinity >= 0 && salinity <= 0.5) score++;
+        else score--;
+
+        return score;
     }
 }

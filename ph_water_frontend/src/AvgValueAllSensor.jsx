@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import {
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
   CartesianGrid,
   Legend,
+  ResponsiveContainer,
+  Scatter,
+  ScatterChart,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 
 export const AvgValueAllSensor = () => {
@@ -45,7 +45,7 @@ export const AvgValueAllSensor = () => {
   };
 
   return (
-    <div className="w-full p-6 bg-gray-900 rounded-xl shadow-lg text-white space-y-10">
+    <div className=" p-6 bg-gray-900 rounded-xl shadow-lg text-white space-y-10">
       {Object.entries(dataSets).map(([key, data]) => (
         <div key={key}>
           <h2 className="text-2xl font-bold mb-4 text-center capitalize">

@@ -62,7 +62,7 @@ const processCSVBatch = async (link: string) => {
             timestamp
           );
           const result = Buffer.from(response).toString("utf8");
-          console.log(`✅ Micro-batch ${batchNumber} processed:`, result);
+          console.log(`✅ Micro-batch ${batchNumber} `);
         } catch (err) {
           console.error(`❌ Error in micro-batch ${batchNumber}:`, err);
         }
@@ -137,8 +137,6 @@ const getWeightPool = async () => {
   }
 };
 const getSensorAveragesByKeyword = async (keyword: string) => {
-  console.log(keyword);
-
   if (!keyword) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Keyword is required");
   }
@@ -153,10 +151,9 @@ const getSensorAveragesByKeyword = async (keyword: string) => {
       "getSensorAveragesByKeyword",
       keyword
     );
-    console.log(resultBuffer);
 
     const jsonString = Buffer.from(resultBuffer).toString("utf8");
-    console.log(jsonString);
+
     return JSON.parse(jsonString);
   } catch (err) {
     console.error("🔴 getSensorAveragesByKeyword error:", err);
@@ -166,10 +163,82 @@ const getSensorAveragesByKeyword = async (keyword: string) => {
     );
   }
 };
+
+const getNodeActivityOverTime = async () => {
+  const contract = await getContract();
+  if (!contract) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Fabric connection failed.");
+  }
+
+  try {
+    const resultBuffer = await contract.evaluateTransaction(
+      "getNodeActivityOverTime"
+    );
+    const jsonString = Buffer.from(resultBuffer).toString("utf8");
+    return JSON.parse(jsonString);
+  } catch (err) {
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Failed to get node activity data"
+    );
+  }
+};
+
+// const getNodeActivityOverTime = async () => {
+//   const contract = await getContract();
+//   if (!contract) {
+//     throw new ApiError(httpStatus.NOT_FOUND, "Fabric connection failed.");
+//   }
+
+//   try {
+//     const resultBuffer = await contract.evaluateTransaction(
+//       "getNodeActivityOverTime"
+//     );
+//     const jsonString = Buffer.from(resultBuffer).toString("utf8");
+//     const rawData = JSON.parse(jsonString);
+
+//     // ✅ Randomize each entry's nodeId between Sensor-0 and Sensor-100
+//     const randomized = rawData.map((entry: any) => ({
+//       time: entry.time,
+//       nodeId: `Sensor-${Math.floor(Math.random() * 101)}`, // Overwrite with random
+//     }));
+
+//     return randomized;
+//   } catch (err) {
+//     throw new ApiError(
+//       httpStatus.INTERNAL_SERVER_ERROR,
+//       "Failed to get node activity data"
+//     );
+//   }
+// };
+
+const getWeightPoolOverTime = async () => {
+  const contract = await getContract();
+  if (!contract) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Fabric connection failed.");
+  }
+
+  try {
+    const resultBuffer = await contract.evaluateTransaction(
+      "getWeightPoolOverTime"
+    );
+    const jsonString = Buffer.from(resultBuffer).toString("utf8");
+    return JSON.parse(jsonString); // Array of { time, weight }
+  } catch (err) {
+    console.error("❌ Failed to fetch weight pool over time:", err);
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Failed to fetch weight pool over time."
+    );
+  }
+};
+
 export const SensorRankingService = {
   processCSVBatch,
   getAllSensorRanks,
   getSensorGraphData,
   getWeightPool,
   getSensorAveragesByKeyword,
+  getNodeActivityOverTime,
+  getWeightPoolOverTime,
 };

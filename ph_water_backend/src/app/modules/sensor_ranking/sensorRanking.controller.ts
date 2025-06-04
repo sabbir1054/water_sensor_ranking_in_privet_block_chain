@@ -64,6 +64,29 @@ const getSensorAveragesByKeyword = catchAsync(
     });
   }
 );
+
+const getNodeActivityOverTime = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await SensorRankingService.getNodeActivityOverTime();
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "rRetrieve node activity over the time",
+      data: result,
+    });
+  }
+);
+const getWeightPoolOverTime = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await SensorRankingService.getWeightPoolOverTime();
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "rRetrieve node activity over the time",
+      data: result,
+    });
+  }
+);
 export const SensorRankingController = {
   // csvUpload,
   processCSVBatch,
@@ -71,4 +94,6 @@ export const SensorRankingController = {
   getWeightPool,
   getSensorGraphData,
   getSensorAveragesByKeyword,
+  getNodeActivityOverTime,
+  getWeightPoolOverTime,
 };

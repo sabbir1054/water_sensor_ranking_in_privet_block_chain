@@ -10,6 +10,8 @@ import SensorRankingTable from "./SensorRankingTable";
 import SpinnerOverlay from "./SpinnerOverlay";
 
 function App() {
+  const API = import.meta.env.VITE_API_BASE_URL;
+
   const [tableData, setTableData] = useState([]);
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState("");
@@ -35,13 +37,13 @@ function App() {
   });
 
   const getWeightPool = () => {
-    fetch(`http://localhost:5000/api/v1/ranking/weightPool`)
+    fetch(`${API}/api/v1/ranking/weightPool`)
       .then((res) => res.json())
       .then((data) => setWeghtPool(data?.data?.value));
   };
 
   const getRanking = () => {
-    fetch(`http://localhost:5000/api/v1/ranking`)
+    fetch(`${API}/api/v1/ranking`)
       .then((res) => res.json())
       .then((data) => setTableData(data?.data));
   };
@@ -60,7 +62,7 @@ function App() {
       setMessage("");
 
       const res = await axios.post(
-        "http://localhost:5000/api/v1/ranking/uploadCsv/batch",
+        `${API}/api/v1/ranking/uploadCsv/batch`,
         formData,
         {
           headers: {

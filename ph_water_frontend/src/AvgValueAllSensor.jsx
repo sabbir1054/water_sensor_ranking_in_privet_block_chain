@@ -11,6 +11,8 @@ import {
 } from "recharts";
 
 export const AvgValueAllSensor = () => {
+  const API = import.meta.env.VITE_API_BASE_URL;
+
   const [dataSets, setDataSets] = useState({
     temp: [],
     pH: [],
@@ -25,7 +27,7 @@ export const AvgValueAllSensor = () => {
     const metrics = ["temp", "pH", "do", "nh4", "salinity", "moisture", "ca"];
     metrics.forEach((metric) => {
       fetch(
-        `http://localhost:5000/api/v1/ranking/getSensorAveragesByKeyword/${metric}`
+        `${API}/api/v1/ranking/getSensorAveragesByKeyword/${metric}`
       )
         .then((res) => res.json())
         .then((data) => {

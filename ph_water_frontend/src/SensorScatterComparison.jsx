@@ -12,7 +12,7 @@ import {
 const SensorScatterComparison = ({ mergedData }) => {
   const ph = mergedData.filter((d) => d.variable === "pH");
   const moisture = mergedData.filter((d) => d.variable === "Moisture");
-  const API_LINK = import.meta.env.API_LINK;
+  const API_LINK = import.meta.env.VITE_API_LINK;
   return (
     <div className="bg-white p-4 rounded shadow">
       <h3 className="text-xl font-semibold text-center mb-4">

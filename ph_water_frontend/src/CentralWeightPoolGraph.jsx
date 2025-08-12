@@ -16,7 +16,7 @@ const weightPoolData = [
   { time: 700, weight: 130000 },
   { time: 1000, weight: 150000 },
 ];
-const API_LINK = import.meta.env.API_LINK;
+const API_LINK = import.meta.env.VITE_API_LINK;
 const CentralWeightPoolGraph = () => {
   const [data, setData] = useState([]);
 

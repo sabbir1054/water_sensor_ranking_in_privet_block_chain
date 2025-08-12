@@ -16,7 +16,7 @@ const getRandomSpikeData = () => {
     nodeId: Math.floor(Math.random() * 101), // Fully random 0–100
   }));
 };
-const API_LINK = import.meta.env.API_LINK;
+const API_LINK = import.meta.env.VITE_API_LINK;
 const NodeActivitySpikeGraph = () => {
   const [data, setData] = useState([]);
 

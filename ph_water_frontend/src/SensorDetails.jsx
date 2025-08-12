@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-const API_LINK = import.meta.env.API_LINK;
+const API_LINK = import.meta.env.VITE_API_LINK;
 const SensorDetails = () => {
   const params = useParams();
   const [data, setData] = useState([]);

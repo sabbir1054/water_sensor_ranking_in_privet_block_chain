@@ -20,7 +20,7 @@ export const AvgValueAllSensor = () => {
     moisture: [],
     ca: [],
   });
-  const API_LINK = import.meta.env.API_LINK;
+  const API_LINK = import.meta.env.VITE_API_LINK;
   useEffect(() => {
     const metrics = ["temp", "pH", "do", "nh4", "salinity", "moisture", "ca"];
     metrics.forEach((metric) => {

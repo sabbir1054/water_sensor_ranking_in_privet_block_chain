@@ -17,7 +17,7 @@ const RankingChart = ({ data }) => {
     const b = Math.floor(Math.random() * 255);
     return `rgba(${r}, ${g}, ${b}, 0.7)`;
   });
-  const API_LINK = import.meta.env.API_LINK;
+  const API_LINK = import.meta.env.VITE_API_LINK;
   const chartData = {
     labels: data.map((sensor) => sensor.sensorId),
     datasets: [

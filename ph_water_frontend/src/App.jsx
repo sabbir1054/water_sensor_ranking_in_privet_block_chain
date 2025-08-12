@@ -8,7 +8,7 @@ import NodeActivityGraph from "./NodeActivityGraph";
 import RankingChart from "./RankingChart";
 import SensorRankingTable from "./SensorRankingTable";
 import SpinnerOverlay from "./SpinnerOverlay";
-const API_LINK = import.meta.env.API_LINK;
+const API_LINK = import.meta.env.VITE_API_LINK;
 function App() {
   const [tableData, setTableData] = useState([]);
   const [file, setFile] = useState(null);

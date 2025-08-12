@@ -1,13 +1,12 @@
-import React from "react";
-import { Bar } from "react-chartjs-2";
 import {
-  Chart as ChartJS,
   BarElement,
   CategoryScale,
+  Chart as ChartJS,
+  Legend,
   LinearScale,
   Tooltip,
-  Legend,
 } from "chart.js";
+import { Bar } from "react-chartjs-2";
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -18,7 +17,7 @@ const RankingChart = ({ data }) => {
     const b = Math.floor(Math.random() * 255);
     return `rgba(${r}, ${g}, ${b}, 0.7)`;
   });
-
+  const API_LINK = import.meta.env.API_LINK;
   const chartData = {
     labels: data.map((sensor) => sensor.sensorId),
     datasets: [

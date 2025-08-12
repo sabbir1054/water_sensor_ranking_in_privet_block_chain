@@ -16,37 +16,37 @@ const getRandomSpikeData = () => {
     nodeId: Math.floor(Math.random() * 101), // Fully random 0–100
   }));
 };
-
+const API_LINK = import.meta.env.API_LINK;
 const NodeActivitySpikeGraph = () => {
   const [data, setData] = useState([]);
 
-  useEffect(() => {
-    // ❗️Simulate random fetch
-    setTimeout(() => {
-      const randomData = getRandomSpikeData();
-      console.log("Generated demo spike data:", randomData); // Inspect this
-      setData(randomData);
-    }, 500);
-  }, []);
   // useEffect(() => {
-  //   fetch("http://localhost:5000/api/v1/ranking/getNodeActivityOverTime")
-  //     .then((res) => res.json())
-  //     .then((resData) => {
-  //       if (resData?.data?.length > 0) {
-  //         const formatted = resData.data.map((entry, index) => ({
-  //           time: index + 1,
-  //           nodeId: parseInt(entry.nodeId.replace("Sensor-", "")),
-  //         }));
-  //         setData(formatted);
-  //       } else {
-  //         console.warn("⚠️ No data from backend, using demo data.");
-  //       }
-  //     })
-  //     .catch((err) => {
-  //       console.error("❌ Fetch error. Using demo data:", err);
-  //       setData(demoData);
-  //     });
+  //   // ❗️Simulate random fetch
+  //   setTimeout(() => {
+  //     const randomData = getRandomSpikeData();
+  //     console.log("Generated demo spike data:", randomData); // Inspect this
+  //     setData(randomData);
+  //   }, 500);
   // }, []);
+  useEffect(() => {
+    fetch(`${API_LINK}/api/v1/ranking/getNodeActivityOverTime`)
+      .then((res) => res.json())
+      .then((resData) => {
+        if (resData?.data?.length > 0) {
+          const formatted = resData.data.map((entry, index) => ({
+            time: index + 1,
+            nodeId: parseInt(entry.nodeId.replace("Sensor-", "")),
+          }));
+          setData(formatted);
+        } else {
+          console.warn("⚠️ No data from backend, using demo data.");
+        }
+      })
+      .catch((err) => {
+        console.error("❌ Fetch error. Using demo data:", err);
+        setData(demoData);
+      });
+  }, []);
   return (
     <div className="p-6 bg-gray-900 rounded-xl shadow-lg ">
       <div className="text-center mb-4">

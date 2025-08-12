@@ -20,13 +20,11 @@ export const AvgValueAllSensor = () => {
     moisture: [],
     ca: [],
   });
-
+  const API_LINK = import.meta.env.API_LINK;
   useEffect(() => {
     const metrics = ["temp", "pH", "do", "nh4", "salinity", "moisture", "ca"];
     metrics.forEach((metric) => {
-      fetch(
-        `http://localhost:5000/api/v1/ranking/getSensorAveragesByKeyword/${metric}`
-      )
+      fetch(`${API_LINK}/api/v1/ranking/getSensorAveragesByKeyword/${metric}`)
         .then((res) => res.json())
         .then((data) => {
           setDataSets((prev) => ({ ...prev, [metric]: data?.data || [] }));

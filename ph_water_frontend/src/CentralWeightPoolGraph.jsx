@@ -16,15 +16,16 @@ const weightPoolData = [
   { time: 700, weight: 130000 },
   { time: 1000, weight: 150000 },
 ];
+const API_LINK = import.meta.env.API_LINK;
 const CentralWeightPoolGraph = () => {
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/v1/ranking/getWeightPoolOverTime")
+    fetch(`${API_LINK}/api/v1/ranking/getWeightPoolOverTime`)
       .then((res) => res.json())
-        .then((resData) => {
-          console.log(resData);
-          
+      .then((resData) => {
+        console.log(resData);
+
         if (resData?.data?.length > 0) {
           setData(resData.data);
         } else {

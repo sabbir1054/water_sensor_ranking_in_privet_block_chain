@@ -3,17 +3,14 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
-  Scatter,
-  ScatterChart,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-
+const API_LINK = import.meta.env.API_LINK;
 const SensorDetails = () => {
   const params = useParams();
   const [data, setData] = useState([]);
@@ -22,7 +19,7 @@ const SensorDetails = () => {
     const fetchSensorGraphData = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/v1/ranking/sensorGraph/${params?.sensorId}`
+          `${API_LINK}/api/v1/ranking/sensorGraph/${params?.sensorId}`
         );
 
         setData(response?.data?.data);

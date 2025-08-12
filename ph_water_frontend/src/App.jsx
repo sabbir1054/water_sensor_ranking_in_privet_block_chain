@@ -8,7 +8,7 @@ import NodeActivityGraph from "./NodeActivityGraph";
 import RankingChart from "./RankingChart";
 import SensorRankingTable from "./SensorRankingTable";
 import SpinnerOverlay from "./SpinnerOverlay";
-
+const API_LINK = import.meta.env.API_LINK;
 function App() {
   const [tableData, setTableData] = useState([]);
   const [file, setFile] = useState(null);
@@ -35,13 +35,13 @@ function App() {
   });
 
   const getWeightPool = () => {
-    fetch(`http://localhost:5000/api/v1/ranking/weightPool`)
+    fetch(`${API_LINK}/api/v1/ranking/weightPool`)
       .then((res) => res.json())
       .then((data) => setWeghtPool(data?.data?.value));
   };
 
   const getRanking = () => {
-    fetch(`http://localhost:5000/api/v1/ranking`)
+    fetch(`${API_LINK}/api/v1/ranking`)
       .then((res) => res.json())
       .then((data) => setTableData(data?.data));
   };
@@ -60,7 +60,7 @@ function App() {
       setMessage("");
 
       const res = await axios.post(
-        "http://localhost:5000/api/v1/ranking/uploadCsv/batch",
+        `${API_LINK}/api/v1/ranking/uploadCsv/batch`,
         formData,
         {
           headers: {

@@ -40,7 +40,7 @@ curl -sSLO https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/ins
 - Go to test-network folder
 
 ```
-cd test-network
+cd fabric-samples/test-network
 ```
 
 - For safety purpose down docker container of test network
